@@ -21,7 +21,7 @@ function initContentBaseRecommend() {
     con.connect( function(err)
     {
         if (err) throw err;
-        var sql = "Select id,description_token from test limit 10"
+        var sql = "Select id,description_token from test"
         con.query(sql, function (err, result) {
             if (err) throw err;
             for(i=0;i<result.length;i++)
