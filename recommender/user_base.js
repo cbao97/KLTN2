@@ -9,6 +9,7 @@ var con = mysql.createConnection({
     password: "",
     database : "kltn"
 });
+const maxSimilarDocuments = 10;
 
 con.connect(function(err)
 {
@@ -36,11 +37,8 @@ function getCollaborativeFilteringResult(user_id){
                 if (result[i].User_id in docs)
                     docs[result[i].User_id].push(obj);
                 else docs[result[i].User_id] = [obj];
-                // if (i=result.length)  done =true;
             }
             console.log(docs)
-            // require('deasync').loopWhile(function(){return !done;});
-            // done =false
             
             user_idx = user_arr.indexOf(user_id);
             
@@ -64,7 +62,14 @@ function getCollaborativeFilteringResult(user_id){
             var result 
             
             result= predict(item_need_to_recommend, avg_user, user_id)
-            console.log(result)
+        
+            console.log( sort(result))
+            result.forEach(item => {
+                item.score = (item.score -1)/4;
+            });
+            if( result.length > maxSimilarDocuments)
+            result= result.splice(0,maxSimilarDocuments);
+            console.log( result);
         })
 }
 
@@ -195,6 +200,24 @@ function predict(item_need_to_recommend, avg_user, user_id) {
     console.timeEnd("predict " + user_id);
     return(result);
 };
+
+function sort(arr) {
+    return new Promise(function (resolve, reject) {
+        resolve(arr.sort(compare));
+    });
+}
+
+function compare(a, b) {
+    const ratingA = a.score;
+    const ratingB = b.score;
+    let comparison = 0;
+    if (ratingA > ratingB) {
+        comparison = -1;
+    } else if (ratingA < ratingB) {
+        comparison = 1;
+    }
+    return comparison;
+}
     
 
 
