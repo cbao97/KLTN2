@@ -219,10 +219,93 @@ function compare(a, b) {
     return comparison;
 }
     
+//getCollaborativeFilteringResult(1)
 
+function getContentBaseRecommend(id){
+    var docVector 
+    var sql = "SELECT cb_vector FROM vector ORDER BY id DESC LIMIT 1 "
+    con.query(sql,function(err,result)
+    {
+        if(err) throw err.sqlMessage
+        docVector = JSON.parse(result[0].cb_vector)
+        for (i = 0 ; i< docVector.length;i++)
+        {   
+            docVector[i].vector = new Vector(docVector[i].vector.vector);
+        }
+        recommender.trainOpt3(docVector,id);
+        const similarDocuments = recommender.getSimilarDocuments(id, 0, 10);
+        return(similarDocuments);
+    })
+}
 
-getCollaborativeFilteringResult(1)
+function getHybridRecommend(user_id,item_id) {
+    let output = [];
+    console.time("hybrid " + user_id);
+    output = joinAndReturn(user_id, item_id);
+    console.timeEnd("hybrid " + user_id);
+    return(output);
+}
 
+function joinAndReturn(user_id, item_id) {
+    let done = false;
+    let result = [], unique_arr = [], output = [], w = 0.3;
+    doAlgorithms(user_id, item_id).then(results => {
+        let cb_results = results[0], cf_results = results[1];
+        cb_results.forEach(cb_item => {
+            if (unique_arr.indexOf(cb_item.id) <= -1)
+                unique_arr.push(cb_item.id);
+        });
+        cf_results.forEach(cf_item => {
+            if (unique_arr.indexOf(cf_item.id) <= -1)
+                unique_arr.push(cf_item.id);
+        });
+        unique_arr.forEach(u_item => {
+            let cb_score = 0, cf_score = 0;
+            let cb_found = cb_results.filter(function (el) {
+                return el.id === u_item;
+            });
+            if (cb_found.length > 0) {
+                cb_score = cb_found[0].score;
+            }
+            let cf_found = cf_results.filter(function (el) {
+                return el.id === u_item;
+            });
+            if (cf_found.length > 0) {
+                cf_score = cf_found[0].score;
+            }
+            output.push({
+                id: u_item,
+                score: (w * cb_score + cf_score) / (w + 1)
+            });
+        });
+        sort(output).then(r => {
+            if (r.length > 10)
+                result = r.splice(0, 10);
+            else result = r;
+        });
+        done = true;
+    });
+    deasync.loopWhile(function () {
+        return !done;
+    });
+    return result;
+}
+
+function doAlgorithms(user_id,item_id){
+    var cf_results, cb_results;
+    try {
+       cf_results = getCollaborativeFilteringResult(user_id)
+       cb_results = getContentBaseRecommend(item_id)
+    }
+    catch (e){
+        console.log(e)
+    }
+    return [cb_results,cf_results]
+    console.log("cb :" + cb_results)
+    console.log("cf :" + cf_results)
+}
+
+doAlgorithms(1,3647)
 // module.exports={
 //     getCollaborativeFilteringResult: function (user_id){
 //         return new Promise(function (resolve, reject) {

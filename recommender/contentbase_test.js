@@ -21,14 +21,14 @@ function initContentBaseRecommend() {
     con.connect( function(err)
     {
         if (err) throw err;
-        var sql = "Select id,description_token from test"
+        var sql = "SELECT Homestay_id,Homestay_description_token FROM `homestay`"
         con.query(sql, function (err, result) {
             if (err) throw err;
             for(i=0;i<result.length;i++)
             {
                 let obj = {
-                    id: result[i].id,
-                    token: result[i].description_token
+                    id: result[i].Homestay_id,
+                    token: result[i].Homestay_description_token
                 };
                 trainingData.push(obj); 
                 done = true;
@@ -79,5 +79,5 @@ function getContentBaseRecommend(id){
     
 }
 
-// initContentBaseRecommend();
-getContentBaseRecommend(3647)
+initContentBaseRecommend();
+//getContentBaseRecommend(3647)

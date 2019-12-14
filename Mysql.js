@@ -9,15 +9,15 @@
     
     con.connect(function(err) {
         if (err) throw err;
-        var sql = "Select id,description from test "
+        var sql = "SELECT Homestay_id,Homestay_description FROM `homestay`"
         con.query(sql, function (err, result) {
         if (err) throw err;
-
+            
         
         for (var i=0 ; i< result.length;i++)
         {
-            var originalword = String(result[i].description);         
-            var listingid = result[i].id;
+            var originalword = String(result[i].Homestay_description);         
+            var listingid = result[i].Homestay_id;
             // Bo cac ki tu dac biet
             var ignor = /[&\/\\#,+()$~%.'":*?<>{}]/;
             withoutnum =originalword.replace(/[0-9]/g, '');
@@ -51,14 +51,14 @@
                 final = null
                 }
             });
-            console.log("---------------------------")
-            console.log(listingid)
+           // console.log("---------------------------")
+           // console.log(listingid)
             final = String(final).substring(1)
-            console.log(final)
+           // console.log(final)
             
             // Update 
            
-            var sql = "UPDATE test SET description_token ='" +  final + "' WHERE id = " + listingid + "";
+            var sql = "UPDATE `homestay` SET Homestay_description_token ='" +  final + "' WHERE Homestay_id = " + listingid + "";
             con.query(sql, function (err, result) {
                 if (err) throw err;
                 console.log(result.affectedRows + " record(s) updated");
