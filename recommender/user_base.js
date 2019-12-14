@@ -10,7 +10,12 @@ var con = mysql.createConnection({
     database : "kltn"
 });
 const maxSimilarDocuments = 10;
-
+const ContentBasedRecommender = require("./content-based-recommender/index");
+const Vector = require("vector-object");
+const recommender = new ContentBasedRecommender({
+  minScore: 0.1,
+  maxSimilarDocuments: 100
+});
 con.connect(function(err)
 {
     if(err) throw err;
@@ -69,7 +74,7 @@ function getCollaborativeFilteringResult(user_id){
             });
             if( result.length > maxSimilarDocuments)
             result= result.splice(0,maxSimilarDocuments);
-            console.log( result);
+            console.log(result);
         })
 }
 
@@ -224,10 +229,10 @@ function compare(a, b) {
 function getContentBaseRecommend(id){
     var docVector 
     var sql = "SELECT cb_vector FROM vector ORDER BY id DESC LIMIT 1 "
-    con.query(sql,function(err,result)
-    {
+    con.query(sql,function(err,result){
         if(err) throw err.sqlMessage
         docVector = JSON.parse(result[0].cb_vector)
+       
         for (i = 0 ; i< docVector.length;i++)
         {   
             docVector[i].vector = new Vector(docVector[i].vector.vector);
@@ -293,19 +298,22 @@ function joinAndReturn(user_id, item_id) {
 
 function doAlgorithms(user_id,item_id){
     var cf_results, cb_results;
-    try {
+ 
        cf_results = getCollaborativeFilteringResult(user_id)
        cb_results = getContentBaseRecommend(item_id)
-    }
-    catch (e){
-        console.log(e)
-    }
+      done = true;
+      require('deasync').loopWhile(function(){return !done;});
+     console.log("cb :" + cb_results)
+     console.log("cf :" + cf_results)
+   
+    
+    
     return [cb_results,cf_results]
-    console.log("cb :" + cb_results)
-    console.log("cf :" + cf_results)
+    
 }
 
 doAlgorithms(1,3647)
+
 // module.exports={
 //     getCollaborativeFilteringResult: function (user_id){
 //         return new Promise(function (resolve, reject) {

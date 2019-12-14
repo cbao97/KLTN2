@@ -107,10 +107,10 @@ class ContentBasedRecommender {
 
     trainOpt3(docVectors, item_id) {
         // step 3 - calculate similarities
-         console.log ("step 3 ")
-         console.time();
+        //  console.log ("step 3 ")
+        //  console.time();
          this.data = this._calculateSimilaritiesOpt(docVectors, item_id, this.options);
-         console.timeEnd();
+        //  console.timeEnd();
     }
 
 
