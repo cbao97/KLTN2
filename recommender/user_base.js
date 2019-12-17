@@ -23,7 +23,25 @@ con.connect(function(err)
 
 const neighbor_num = 4;
 
+function getContentBaseRecommend(id){
+    return new Promise(function (resolve, reject) {
+    var docVector 
+    var sql = "SELECT cb_vector FROM vector ORDER BY id DESC LIMIT 1 "
+    con.query(sql,function(err,result){
+        if(err) throw err.sqlMessage
+        docVector = JSON.parse(result[0].cb_vector)
+        for (i = 0 ; i< docVector.length;i++)
+        {   
+            docVector[i].vector = new Vector(docVector[i].vector.vector);
+        }
+        recommender.trainOpt3(docVector,id);
+        const similarDocuments = recommender.getSimilarDocuments(id, 0, 10);
+        return resolve(similarDocuments);
+    })})
+}
+
 function getCollaborativeFilteringResult(user_id){
+    return new Promise(function (resolve, reject) {
         let user_arr = [];
         let docs = {};
         let user_idx = 0;
@@ -43,7 +61,7 @@ function getCollaborativeFilteringResult(user_id){
                     docs[result[i].User_id].push(obj);
                 else docs[result[i].User_id] = [obj];
             }
-            console.log(docs)
+         //   console.log(docs)
             
             user_idx = user_arr.indexOf(user_id);
             
@@ -53,29 +71,31 @@ function getCollaborativeFilteringResult(user_id){
             //step 1
             var avg_user 
             avg_user =  normalizeDocs(docs, user_arr, user_id) 
-            console.log(avg_user) 
+            //console.log(avg_user) 
             //step 2
             const user_items = docs[user_id];   
             var similarity 
             similarity = getCosinSimilarity(docs, user_items, user_arr, user_id)    
-            console.log(similarity)
+           // console.log(similarity)
             //step 3
             var item_need_to_recommend 
             item_need_to_recommend = getItemNeedToRecommend(docs, similarity, user_items, user_id)
-            console.log(item_need_to_recommend)
+         //   console.log(item_need_to_recommend)
             //step 4
             var result 
             
             result= predict(item_need_to_recommend, avg_user, user_id)
         
-            console.log( sort(result))
+           // console.log( sort(result))
             result.forEach(item => {
                 item.score = (item.score -1)/4;
             });
             if( result.length > maxSimilarDocuments)
             result= result.splice(0,maxSimilarDocuments);
-            console.log(result);
+            //console.log(result);
+            return resolve(result);
         })
+    })
 }
 
 function  normalizeDocs(docs, user_arr, user_id) {
@@ -223,31 +243,14 @@ function compare(a, b) {
     }
     return comparison;
 }
-    
-//getCollaborativeFilteringResult(1)
 
-function getContentBaseRecommend(id){
-    var docVector 
-    var sql = "SELECT cb_vector FROM vector ORDER BY id DESC LIMIT 1 "
-    con.query(sql,function(err,result){
-        if(err) throw err.sqlMessage
-        docVector = JSON.parse(result[0].cb_vector)
-       
-        for (i = 0 ; i< docVector.length;i++)
-        {   
-            docVector[i].vector = new Vector(docVector[i].vector.vector);
-        }
-        recommender.trainOpt3(docVector,id);
-        const similarDocuments = recommender.getSimilarDocuments(id, 0, 10);
-        return(similarDocuments);
-    })
-}
 
 function getHybridRecommend(user_id,item_id) {
     let output = [];
     console.time("hybrid " + user_id);
     output = joinAndReturn(user_id, item_id);
     console.timeEnd("hybrid " + user_id);
+    console.log(output)
     return(output);
 }
 
@@ -290,29 +293,38 @@ function joinAndReturn(user_id, item_id) {
         });
         done = true;
     });
-    deasync.loopWhile(function () {
-        return !done;
-    });
+    require('deasync').loopWhile(function(){return !done;});
     return result;
 }
 
-function doAlgorithms(user_id,item_id){
-    var cf_results, cb_results;
- 
-       cf_results = getCollaborativeFilteringResult(user_id)
-       cb_results = getContentBaseRecommend(item_id)
-      done = true;
-      require('deasync').loopWhile(function(){return !done;});
-     console.log("cb :" + cb_results)
-     console.log("cf :" + cf_results)
-   
-    
-    
-    return [cb_results,cf_results]
-    
+
+function doAlgorithms(user_id, item_id) {
+    return Promise.all([
+        new Promise(function (resolve, reject) {
+            getContentBaseRecommend(item_id)
+                .then(cb_results => {
+                   
+                    return resolve(cb_results);
+                })
+                .catch(function (err) {
+                    reject(new Error(err));
+                });
+        }),
+        new Promise(function (resolve, reject) {
+            getCollaborativeFilteringResult(user_id)
+                .then(cf_results => {
+                    
+                    return resolve(cf_results);
+                })
+                .catch(function (err) {
+                    return resolve([]);
+                });
+        })
+    ]);
 }
 
-doAlgorithms(1,3647)
+
+getHybridRecommend(1,3647)
 
 // module.exports={
 //     getCollaborativeFilteringResult: function (user_id){
